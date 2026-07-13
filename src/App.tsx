@@ -1,5 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { WebAudioEngine } from "./audio/webAudioEngine";
+import {
+  CaptureSection,
+  type CaptureSaved,
+} from "./components/CaptureSection";
 import { LibrarySection, type LibraryState } from "./components/LibrarySection";
 import { PadGrid } from "./components/PadGrid";
 import { SampleEditor } from "./components/SampleEditor";
@@ -17,6 +21,7 @@ import {
   type Sample,
   type SampleId,
 } from "./core/kit";
+import { captureFileName } from "./core/capture";
 import { padForKey } from "./core/padKeys";
 import {
   FileSystemLibrary,
@@ -179,6 +184,31 @@ export function App() {
     }
   }
 
+  /**
+   * A finished Live Capture take becomes a Sample exactly like a File
+   * Import: into the Library folder when one is open, otherwise a
+   * session-only Kit Sample.
+   */
+  async function onCaptured(blob: Blob): Promise<CaptureSaved> {
+    const name = captureFileName(new Date());
+    if (library.status === "open") {
+      const entries = await fileSystemLibrary().importBlob(
+        name,
+        blob,
+        "Live Capture",
+      );
+      setLibrary({ ...library, entries });
+      return { name, savedTo: "library" };
+    }
+    const id = crypto.randomUUID();
+    const { durationSeconds } = await engine().decode(
+      id,
+      await blob.arrayBuffer(),
+    );
+    setKit((current) => addSample(current, { id, name, durationSeconds }));
+    return { name, savedTo: "session" };
+  }
+
   function flashPad(padIndex: number) {
     setFlashes((current) =>
       current.map((count, i) => (i === padIndex ? count + 1 : count)),
@@ -266,6 +296,7 @@ export function App() {
         onReopen={() => void onReopenLibrary()}
         onPreview={(name) => void onPreviewLibrarySample(name)}
       />
+      <CaptureSection onCaptured={onCaptured} />
       <SamplesSection
         samples={kit.samples}
         importError={importError}
