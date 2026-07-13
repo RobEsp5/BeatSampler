@@ -14,6 +14,7 @@ import {
   indexRecordFor,
   serializeLibraryIndex,
   type LibraryEntry,
+  type Source,
 } from "../core/library";
 
 /** Sidecar metadata index kept inside the Library folder itself. */
@@ -101,23 +102,39 @@ export class FileSystemLibrary {
    * anything touches the folder), then write the file and update the sidecar.
    */
   async importFile(file: File): Promise<readonly LibraryEntry[]> {
+    return this.importBytes(file.name, await file.arrayBuffer(), DEFAULT_SOURCE);
+  }
+
+  /**
+   * A finished Live Capture take (or any in-memory audio) lands in the
+   * Library through the same decode-then-write path as File Import — the
+   * resulting Sample differs only in its recorded Source.
+   */
+  async importBlob(
+    name: string,
+    blob: Blob,
+    source: Source,
+  ): Promise<readonly LibraryEntry[]> {
+    return this.importBytes(name, await blob.arrayBuffer(), source);
+  }
+
+  private async importBytes(
+    name: string,
+    data: ArrayBuffer,
+    source: Source,
+  ): Promise<readonly LibraryEntry[]> {
     const dir = this.requireDir();
-    const data = await file.arrayBuffer();
     // decodeAudioData consumes its input, so hand it a copy.
     const { durationSeconds } = await this.engine.decode(
-      librarySampleId(file.name),
+      librarySampleId(name),
       data.slice(0),
     );
-    this.decoded.add(file.name);
-    const fileHandle = await dir.getFileHandle(file.name, { create: true });
+    this.decoded.add(name);
+    const fileHandle = await dir.getFileHandle(name, { create: true });
     const writable = await fileHandle.createWritable();
     await writable.write(data);
     await writable.close();
-    const entry: LibraryEntry = {
-      name: file.name,
-      source: DEFAULT_SOURCE,
-      durationSeconds,
-    };
+    const entry: LibraryEntry = { name, source, durationSeconds };
     this.entries = [
       ...this.entries.filter((existing) => existing.name !== entry.name),
       entry,

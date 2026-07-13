@@ -31,6 +31,15 @@ Install `playwright-core` in the scratchpad, not the repo.
 - Observe playback from outside by monkeypatching `AudioBufferSourceNode.prototype.start` in `page.evaluate` and counting calls; buffer `sampleRate` should equal the context's native rate (ADR 0002), not the file's.
 - Pads respond to `pointerdown` (not click): `locator.dispatchEvent("pointerdown")`.
 - Collect `page.on("console")` errors + `pageerror` as evidence; expect zero.
+- Live Capture: add `--use-fake-device-for-media-stream` and
+  `--use-fake-ui-for-media-stream` to the launch args — `getUserMedia` then
+  yields a fake tone with no permission prompt, so the level meter reads > 0
+  and a real webm take gets recorded.
+- Library flows: stub `window.showDirectoryPicker` to
+  `navigator.storage.getDirectory()` (OPFS is a real
+  FileSystemDirectoryHandle) in `context.addInitScript`.
+- `page.focus("body")` does NOT blur a focused `<select>`; use
+  `page.evaluate(() => document.activeElement?.blur())` before keyboard tests.
 
 ## Flows worth driving
 
