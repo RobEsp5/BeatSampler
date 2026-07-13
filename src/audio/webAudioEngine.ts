@@ -1,4 +1,4 @@
-import type { SampleId } from "../core/model";
+import type { SampleId } from "../core/kit";
 
 /**
  * Thin adapter over the Web Audio API (the one seam from the PRD — the core
@@ -27,7 +27,7 @@ export class WebAudioEngine {
     return { durationSeconds: buffer.duration };
   }
 
-  play(id: SampleId): void {
+  play(id: SampleId, volume = 1): void {
     const buffer = this.buffers.get(id);
     if (buffer === undefined) {
       return;
@@ -36,7 +36,10 @@ export class WebAudioEngine {
     void ctx.resume();
     const source = ctx.createBufferSource();
     source.buffer = buffer;
-    source.connect(ctx.destination);
+    const gain = ctx.createGain();
+    gain.gain.value = volume;
+    source.connect(gain);
+    gain.connect(ctx.destination);
     source.start();
   }
 }

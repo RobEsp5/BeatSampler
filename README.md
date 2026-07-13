@@ -4,6 +4,8 @@ App that helps make sample based music.
 
 **Live app:** https://robesp5.github.io/BeatSampler/ (deployed from `main` via GitHub Actions)
 
+**Controls:** the 16 Pads map to the keyboard MPC-style — bottom row `Z X C V` = Pads 1–4, then `A S D F`, `Q W E R`, and `1 2 3 4` = Pads 13–16 (each Pad shows its key).
+
 ## Development
 
 ```sh
