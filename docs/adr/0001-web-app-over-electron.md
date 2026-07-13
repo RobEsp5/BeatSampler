@@ -1,0 +1,7 @@
+# Web app over native desktop (Electron)
+
+BeatSampler needs to run identically on a 2012 MacBook Pro and a modern Windows PC, and ideally leaves the door open to mobile later. Electron bundles a full Chromium + Node runtime, which is heavy on 13-year-old hardware; a plain browser-based app (Web Audio API + Web MIDI API) uses whatever browser is already installed, runs identically across machines with no separate install/update management, and the same APIs work in mobile Chrome without a separate native codebase. We chose a web app over Electron for these reasons. If a more "native" feel is wanted later, Tauri (which wraps the OS's built-in webview instead of bundling Chromium) can carry the same code without a rewrite.
+
+**Consequences:** Web MIDI is unsupported in Safari, so the app targets Chromium-based browsers (Chrome/Edge/Brave) on desktop; the same constraint applies to any future mobile build (Chrome on Android, not Safari on iOS, for MIDI-dependent features).
+
+One of the two target machines (a Mid-2012 15" MacBook Pro) is capped by Apple at macOS Catalina, which in turn caps it at Chrome 128 (Chrome dropped Catalina support at v129, Sept 2024) with no further updates. Chrome 128 does include File System Access API, Web MIDI, and tab/display audio capture, so the app is fully functional there today — the ceiling is "frozen at a 2024-era Chrome," not "missing required APIs." This machine is not a hard requirement (a Windows Lenovo is available as an equally-valid second machine), so this constraint is noted rather than designed around.
