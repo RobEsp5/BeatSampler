@@ -19,6 +19,16 @@ export interface Sample {
   readonly trimStartSeconds?: number;
   /** Trim End, seconds; absent means durationSeconds (play to the end). */
   readonly trimEndSeconds?: number;
+  /**
+   * The decoded audio this Sample plays, when it differs from its own id —
+   * e.g. a Slice shares its source Sample's buffer. Absent means `id`.
+   */
+  readonly bufferId?: SampleId;
+}
+
+/** The id the audio adapter should look up for this Sample's decoded audio. */
+export function audioBufferIdOf(sample: Sample): SampleId {
+  return sample.bufferId ?? sample.id;
 }
 
 /** The region of the Sample that playback should cover (Start/End trim). */

@@ -5,9 +5,11 @@ import { PadGrid } from "./components/PadGrid";
 import { PadParams } from "./components/PadParams";
 import { SampleEditor } from "./components/SampleEditor";
 import { SamplesSection } from "./components/SamplesSection";
+import { chopSampleToPads } from "./core/chop";
 import {
   addSample,
   assignSampleToPad,
+  audioBufferIdOf,
   emptyKit,
   PAD_COUNT,
   padPlayback,
@@ -191,7 +193,7 @@ export function App() {
   /** Plays a Sample's trimmed region (Start/End respected everywhere). */
   function playSample(sample: Sample, volume = 1) {
     const region = playbackWindow(sample);
-    engine().play(sample.id, { volume, ...region });
+    engine().play(audioBufferIdOf(sample), { volume, ...region });
   }
 
   /** One shared trigger path for mouse, keyboard, and MIDI (velocity 0..1). */
@@ -203,7 +205,7 @@ export function App() {
     }
     const params = padPlayback(kit, padIndex);
     const region = playbackWindow(sample);
-    engine().play(sample.id, {
+    engine().play(audioBufferIdOf(sample), {
       ...params,
       volume: params.volume * velocity01,
       ...region,
@@ -293,13 +295,18 @@ export function App() {
       {selectedSample !== null && (
         <SampleEditor
           sample={selectedSample}
-          channelData={engine().channelData(selectedSample.id)}
+          channelData={engine().channelData(audioBufferIdOf(selectedSample))}
           onTrimChange={(startSeconds, endSeconds) =>
             setKit((current) =>
               setSampleTrim(current, selectedSample.id, startSeconds, endSeconds),
             )
           }
           onPreview={() => playSample(selectedSample)}
+          onChop={(regions) =>
+            setKit((current) =>
+              chopSampleToPads(current, selectedSample.id, regions),
+            )
+          }
         />
       )}
       <PadGrid

@@ -12,14 +12,17 @@ interface SampleEditorProps {
   channelData: Float32Array | null;
   onTrimChange: (startSeconds: number, endSeconds: number) => void;
   onPreview: () => void;
+  /** Chop the Sample into N even Regions, Slices landing on Pads. */
+  onChop: (regions: number) => void;
 }
 
-/** Waveform view with Start/End trim controls for the selected Sample. */
+/** Waveform view with Start/End trim + Chop controls for the selected Sample. */
 export function SampleEditor({
   sample,
   channelData,
   onTrimChange,
   onPreview,
+  onChop,
 }: SampleEditorProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const { offsetSeconds, durationSeconds } = playbackWindow(sample);
@@ -70,6 +73,19 @@ export function SampleEditor({
         height={HEIGHT}
         className="waveform"
       />
+      <div className="chop-controls">
+        <span>Chop into Regions</span>
+        {[4, 8, 16].map((regions) => (
+          <button
+            key={regions}
+            type="button"
+            className="assign"
+            onClick={() => onChop(regions)}
+          >
+            {regions}
+          </button>
+        ))}
+      </div>
       <div className="trim-controls">
         <label>
           Start {start.toFixed(3)}s
