@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { WebAudioEngine } from "./audio/webAudioEngine";
 import { LibrarySection, type LibraryState } from "./components/LibrarySection";
 import { PadGrid } from "./components/PadGrid";
+import { PadParams } from "./components/PadParams";
 import { SampleEditor } from "./components/SampleEditor";
 import { SamplesSection } from "./components/SamplesSection";
 import {
@@ -9,6 +10,7 @@ import {
   assignSampleToPad,
   emptyKit,
   PAD_COUNT,
+  padPlayback,
   padVolume,
   playbackWindow,
   sampleForPad,
@@ -44,6 +46,7 @@ export function App() {
   const [flashes, setFlashes] = useState<readonly number[]>(() =>
     new Array<number>(PAD_COUNT).fill(0),
   );
+  const [focusedPad, setFocusedPad] = useState<number | null>(null);
 
   function engine(): WebAudioEngine {
     engineRef.current ??= new WebAudioEngine();
@@ -193,11 +196,18 @@ export function App() {
 
   /** One shared trigger path for mouse, keyboard, and MIDI (velocity 0..1). */
   function triggerPad(padIndex: number, velocity01 = 1) {
+    setFocusedPad(padIndex);
     const sample = sampleForPad(kit, padIndex);
     if (sample === null) {
       return;
     }
-    playSample(sample, padVolume(kit, padIndex) * velocity01);
+    const params = padPlayback(kit, padIndex);
+    const region = playbackWindow(sample);
+    engine().play(sample.id, {
+      ...params,
+      volume: params.volume * velocity01,
+      ...region,
+    });
     flashPad(padIndex);
   }
 
@@ -208,6 +218,7 @@ export function App() {
 
   /** Pressing a Pad directly (click / Enter): assigns in assign mode, else triggers. */
   function onPadPressed(padIndex: number) {
+    setFocusedPad(padIndex);
     if (assigningId !== null) {
       const sample = kit.samples.find((s) => s.id === assigningId);
       setKit((current) => assignSampleToPad(current, padIndex, assigningId));
@@ -301,6 +312,9 @@ export function App() {
           void onLibrarySampleDropped(padIndex, name)
         }
       />
+      {focusedPad !== null && (
+        <PadParams kit={kit} padIndex={focusedPad} onKitChange={onKitChange} />
+      )}
       {kit.samples.length === 0 && (
         <p className="hint">Import a file, then assign it to a Pad.</p>
       )}

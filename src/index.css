@@ -337,3 +337,37 @@ h1 {
   accent-color: #8ab4f8;
   margin: 0;
 }
+
+.pad-params {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto 1fr 1fr;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.6rem 0.75rem;
+  background: #1d1f26;
+  border-radius: 0.5rem;
+  box-sizing: border-box;
+}
+
+.pad-params-title {
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.pad-params-title small {
+  color: #9aa0a6;
+}
+
+.pad-params label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+  color: #9aa0a6;
+}
+
+.pad-params input {
+  accent-color: #8ab4f8;
+  margin: 0;
+}

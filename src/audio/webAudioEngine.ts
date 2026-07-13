@@ -31,6 +31,10 @@ export class WebAudioEngine {
     id: SampleId,
     options: {
       volume?: number;
+      /** Stereo position, -1..1. */
+      pan?: number;
+      /** Playback-rate multiplier (1 = unshifted); also shortens/stretches time. */
+      playbackRate?: number;
       offsetSeconds?: number;
       durationSeconds?: number;
     } = {},
@@ -43,10 +47,17 @@ export class WebAudioEngine {
     void ctx.resume();
     const source = ctx.createBufferSource();
     source.buffer = buffer;
+    const rate = options.playbackRate ?? 1;
+    source.playbackRate.value = rate;
     const gain = ctx.createGain();
     gain.gain.value = options.volume ?? 1;
+    const panner = ctx.createStereoPanner();
+    panner.pan.value = options.pan ?? 0;
     source.connect(gain);
-    gain.connect(ctx.destination);
+    gain.connect(panner);
+    panner.connect(ctx.destination);
+    // start()'s duration is in buffer-content seconds (the spec's playback
+    // algorithm tracks buffer position), so it needs no playbackRate scaling.
     source.start(0, options.offsetSeconds ?? 0, options.durationSeconds);
   }
 

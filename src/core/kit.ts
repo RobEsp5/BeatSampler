@@ -35,6 +35,10 @@ export interface Pad {
   readonly sampleId: SampleId | null;
   /** Playback level, 0..1. */
   readonly volume: number;
+  /** Stereo position, -1 (left) .. 1 (right); 0 is center. */
+  readonly pan: number;
+  /** Pitch shift in semitones, -12 .. +12; 0 is unshifted. */
+  readonly pitchSemitones: number;
 }
 
 export interface KitState {
@@ -42,7 +46,10 @@ export interface KitState {
   readonly pads: readonly Pad[];
 }
 
-const emptyPad: Pad = { sampleId: null, volume: 1 };
+const emptyPad: Pad = { sampleId: null, volume: 1, pan: 0, pitchSemitones: 0 };
+
+const clampTo = (min: number, max: number, value: number) =>
+  Math.min(max, Math.max(min, value));
 
 export const emptyKit: KitState = {
   samples: [],
@@ -70,8 +77,34 @@ export function setPadVolume(
   padIndex: number,
   volume: number,
 ): KitState {
-  const clamped = Math.min(1, Math.max(0, volume));
+  const clamped = clampTo(0, 1, volume);
   return updatePad(kit, padIndex, (pad) => ({ ...pad, volume: clamped }));
+}
+
+export function setPadPan(
+  kit: KitState,
+  padIndex: number,
+  pan: number,
+): KitState {
+  const clamped = clampTo(-1, 1, pan);
+  return updatePad(kit, padIndex, (pad) => ({ ...pad, pan: clamped }));
+}
+
+export function setPadPitch(
+  kit: KitState,
+  padIndex: number,
+  semitones: number,
+): KitState {
+  const clamped = clampTo(-12, 12, semitones);
+  return updatePad(kit, padIndex, (pad) => ({
+    ...pad,
+    pitchSemitones: clamped,
+  }));
+}
+
+/** Equal-temperament pitch shift: +12 semitones doubles the playback rate. */
+export function pitchToPlaybackRate(semitones: number): number {
+  return 2 ** (semitones / 12);
 }
 
 /** Sets a Sample's Start/End trim, clamped to its duration. Start must precede End. */
@@ -109,6 +142,19 @@ function updateSample(
 
 export function padVolume(kit: KitState, padIndex: number): number {
   return kit.pads[padIndex]?.volume ?? 1;
+}
+
+/** The Pad's playback parameters, ready for the audio adapter. */
+export function padPlayback(
+  kit: KitState,
+  padIndex: number,
+): { volume: number; pan: number; playbackRate: number } {
+  const pad = kit.pads[padIndex];
+  return {
+    volume: pad?.volume ?? 1,
+    pan: pad?.pan ?? 0,
+    playbackRate: pitchToPlaybackRate(pad?.pitchSemitones ?? 0),
+  };
 }
 
 export function sampleForPad(kit: KitState, padIndex: number): Sample | null {

@@ -4,9 +4,13 @@ import {
   assignSampleToPad,
   emptyKit,
   PAD_COUNT,
+  padPlayback,
   padVolume,
+  pitchToPlaybackRate,
   playbackWindow,
   sampleForPad,
+  setPadPan,
+  setPadPitch,
   setPadVolume,
   setSampleTrim,
   type Sample,
@@ -22,7 +26,12 @@ describe("emptyKit", () => {
     expect(PAD_COUNT).toBe(16);
     expect(emptyKit.pads).toHaveLength(16);
     for (const pad of emptyKit.pads) {
-      expect(pad).toEqual({ sampleId: null, volume: 1 });
+      expect(pad).toEqual({
+        sampleId: null,
+        volume: 1,
+        pan: 0,
+        pitchSemitones: 0,
+      });
     }
   });
 });
@@ -133,6 +142,69 @@ describe("playbackWindow", () => {
       offsetSeconds: 0.1,
       durationSeconds: expect.closeTo(0.2, 10) as number,
     });
+  });
+});
+
+describe("emptyKit pad params", () => {
+  it("defaults every Pad to center pan and zero pitch", () => {
+    for (const pad of emptyKit.pads) {
+      expect(pad.pan).toBe(0);
+      expect(pad.pitchSemitones).toBe(0);
+    }
+  });
+});
+
+describe("setPadPan", () => {
+  it("sets the Pad's pan", () => {
+    expect(setPadPan(emptyKit, 3, -0.5).pads[3]?.pan).toBe(-0.5);
+  });
+
+  it("clamps pan to -1..1 and ignores out-of-range Pads", () => {
+    expect(setPadPan(emptyKit, 0, 2).pads[0]?.pan).toBe(1);
+    expect(setPadPan(emptyKit, 0, -2).pads[0]?.pan).toBe(-1);
+    expect(setPadPan(emptyKit, 16, 0.5)).toEqual(emptyKit);
+  });
+});
+
+describe("setPadPitch", () => {
+  it("sets the Pad's pitch in semitones", () => {
+    expect(setPadPitch(emptyKit, 3, 7).pads[3]?.pitchSemitones).toBe(7);
+  });
+
+  it("clamps pitch to -12..+12 and ignores out-of-range Pads", () => {
+    expect(setPadPitch(emptyKit, 0, 30).pads[0]?.pitchSemitones).toBe(12);
+    expect(setPadPitch(emptyKit, 0, -30).pads[0]?.pitchSemitones).toBe(-12);
+    expect(setPadPitch(emptyKit, 16, 5)).toEqual(emptyKit);
+  });
+});
+
+describe("padPlayback", () => {
+  it("bundles the Pad's volume, pan, and playback rate", () => {
+    let kit = setPadVolume(emptyKit, 2, 0.5);
+    kit = setPadPan(kit, 2, -0.25);
+    kit = setPadPitch(kit, 2, 12);
+    expect(padPlayback(kit, 2)).toEqual({
+      volume: 0.5,
+      pan: -0.25,
+      playbackRate: 2,
+    });
+  });
+
+  it("returns neutral params for an out-of-range Pad", () => {
+    expect(padPlayback(emptyKit, 99)).toEqual({
+      volume: 1,
+      pan: 0,
+      playbackRate: 1,
+    });
+  });
+});
+
+describe("pitchToPlaybackRate", () => {
+  it("maps semitones to a playback-rate multiplier", () => {
+    expect(pitchToPlaybackRate(0)).toBe(1);
+    expect(pitchToPlaybackRate(12)).toBeCloseTo(2, 10);
+    expect(pitchToPlaybackRate(-12)).toBeCloseTo(0.5, 10);
+    expect(pitchToPlaybackRate(7)).toBeCloseTo(1.4983070768766815, 10);
   });
 });
 
