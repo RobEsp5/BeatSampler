@@ -17,6 +17,7 @@ import {
   type SampleId,
 } from "./core/kit";
 import { padForKey } from "./core/padKeys";
+import { connectWebMidi, type MidiStatus } from "./midi/webMidiAdapter";
 
 export function App() {
   const engineRef = useRef<WebAudioEngine | null>(null);
@@ -24,6 +25,7 @@ export function App() {
   const [importError, setImportError] = useState<string | null>(null);
   const [assigningId, setAssigningId] = useState<SampleId | null>(null);
   const [selectedId, setSelectedId] = useState<SampleId | null>(null);
+  const [midiStatus, setMidiStatus] = useState<MidiStatus | null>(null);
   const [flashes, setFlashes] = useState<readonly number[]>(() =>
     new Array<number>(PAD_COUNT).fill(0),
   );
@@ -61,14 +63,20 @@ export function App() {
     engine().play(sample.id, { volume, ...region });
   }
 
-  function triggerPad(padIndex: number) {
+  /** One shared trigger path for mouse, keyboard, and MIDI (velocity 0..1). */
+  function triggerPad(padIndex: number, velocity01 = 1) {
     const sample = sampleForPad(kit, padIndex);
     if (sample === null) {
       return;
     }
-    playSample(sample, padVolume(kit, padIndex));
+    playSample(sample, padVolume(kit, padIndex) * velocity01);
     flashPad(padIndex);
   }
+
+  // MIDI events arrive outside React, so the adapter (connected once) calls
+  // through a ref that always points at the latest triggerPad closure.
+  const triggerPadRef = useRef(triggerPad);
+  triggerPadRef.current = triggerPad;
 
   /** Pressing a Pad directly (click / Enter): assigns in assign mode, else triggers. */
   function onPadPressed(padIndex: number) {
@@ -111,6 +119,13 @@ export function App() {
     // handler's closure over `kit` fresh.
   });
 
+  useEffect(() => {
+    return connectWebMidi(
+      (padIndex, velocity01) => triggerPadRef.current(padIndex, velocity01),
+      setMidiStatus,
+    );
+  }, []);
+
   const selectedSample =
     kit.samples.find((sample) => sample.id === selectedId) ?? null;
 
@@ -151,6 +166,11 @@ export function App() {
       />
       {kit.samples.length === 0 && (
         <p className="hint">Import a file, then assign it to a Pad.</p>
+      )}
+      {midiStatus !== null && (
+        <p className="hint midi-status" data-status={midiStatus}>
+          MIDI: {midiStatus}
+        </p>
       )}
     </main>
   );
