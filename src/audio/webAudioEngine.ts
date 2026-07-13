@@ -27,7 +27,14 @@ export class WebAudioEngine {
     return { durationSeconds: buffer.duration };
   }
 
-  play(id: SampleId, volume = 1): void {
+  play(
+    id: SampleId,
+    options: {
+      volume?: number;
+      offsetSeconds?: number;
+      durationSeconds?: number;
+    } = {},
+  ): void {
     const buffer = this.buffers.get(id);
     if (buffer === undefined) {
       return;
@@ -37,9 +44,14 @@ export class WebAudioEngine {
     const source = ctx.createBufferSource();
     source.buffer = buffer;
     const gain = ctx.createGain();
-    gain.gain.value = volume;
+    gain.gain.value = options.volume ?? 1;
     source.connect(gain);
     gain.connect(ctx.destination);
-    source.start();
+    source.start(0, options.offsetSeconds ?? 0, options.durationSeconds);
+  }
+
+  /** First-channel PCM data for waveform display, or null if not decoded. */
+  channelData(id: SampleId): Float32Array | null {
+    return this.buffers.get(id)?.getChannelData(0) ?? null;
   }
 }

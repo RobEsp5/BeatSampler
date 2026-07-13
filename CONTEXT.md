@@ -28,6 +28,9 @@ _Avoid_: Program, Preset
 A triggerable slot holding one Sample and its playback parameters (volume, pitch, envelope, etc.), played via mouse, keyboard, or a MIDI controller such as the MPK Mini.
 _Avoid_: Cell
 
+**Start/End (Trim)**:
+A Sample's playable region — playback (and Chopping) covers only the portion between its Start and End points. Distinct from Chop: trimming narrows one Sample; Chopping splits it into Slices.
+
 **Chop**:
 The act of slicing a Sample into pieces — by threshold, even regions, or manual placement — so each piece can be assigned to its own Pad.
 

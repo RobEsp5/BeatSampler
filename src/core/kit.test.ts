@@ -5,8 +5,10 @@ import {
   emptyKit,
   PAD_COUNT,
   padVolume,
+  playbackWindow,
   sampleForPad,
   setPadVolume,
+  setSampleTrim,
   type Sample,
 } from "./kit";
 
@@ -89,6 +91,48 @@ describe("setPadVolume", () => {
 
   it("ignores an out-of-range Pad index", () => {
     expect(setPadVolume(emptyKit, 16, 0.5)).toEqual(emptyKit);
+  });
+});
+
+describe("setSampleTrim", () => {
+  it("sets Start and End on the Sample", () => {
+    const kit = setSampleTrim(kitWithKick, kick.id, 0.1, 0.3);
+    const trimmed = kit.samples[0];
+    expect(trimmed?.trimStartSeconds).toBe(0.1);
+    expect(trimmed?.trimEndSeconds).toBe(0.3);
+  });
+
+  it("clamps Start and End to the Sample's duration", () => {
+    const kit = setSampleTrim(kitWithKick, kick.id, -1, 99);
+    expect(kit.samples[0]?.trimStartSeconds).toBe(0);
+    expect(kit.samples[0]?.trimEndSeconds).toBe(kick.durationSeconds);
+  });
+
+  it("ignores a trim where Start is not before End", () => {
+    expect(setSampleTrim(kitWithKick, kick.id, 0.3, 0.3)).toEqual(kitWithKick);
+    expect(setSampleTrim(kitWithKick, kick.id, 0.3, 0.1)).toEqual(kitWithKick);
+  });
+
+  it("ignores an unknown Sample id", () => {
+    expect(setSampleTrim(kitWithKick, "s-ghost", 0, 0.1)).toEqual(kitWithKick);
+  });
+});
+
+describe("playbackWindow", () => {
+  it("spans the whole Sample when untrimmed", () => {
+    expect(playbackWindow(kick)).toEqual({
+      offsetSeconds: 0,
+      durationSeconds: kick.durationSeconds,
+    });
+  });
+
+  it("spans only the trimmed region", () => {
+    const kit = setSampleTrim(kitWithKick, kick.id, 0.1, 0.3);
+    const trimmed = kit.samples[0];
+    expect(trimmed && playbackWindow(trimmed)).toEqual({
+      offsetSeconds: 0.1,
+      durationSeconds: expect.closeTo(0.2, 10) as number,
+    });
   });
 });
 

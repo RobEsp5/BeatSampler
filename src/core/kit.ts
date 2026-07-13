@@ -15,6 +15,20 @@ export interface Sample {
   readonly id: SampleId;
   readonly name: string;
   readonly durationSeconds: number;
+  /** Trim Start, seconds; absent means 0 (play from the beginning). */
+  readonly trimStartSeconds?: number;
+  /** Trim End, seconds; absent means durationSeconds (play to the end). */
+  readonly trimEndSeconds?: number;
+}
+
+/** The region of the Sample that playback should cover (Start/End trim). */
+export function playbackWindow(sample: Sample): {
+  offsetSeconds: number;
+  durationSeconds: number;
+} {
+  const start = sample.trimStartSeconds ?? 0;
+  const end = sample.trimEndSeconds ?? sample.durationSeconds;
+  return { offsetSeconds: start, durationSeconds: end - start };
 }
 
 export interface Pad {
@@ -58,6 +72,39 @@ export function setPadVolume(
 ): KitState {
   const clamped = Math.min(1, Math.max(0, volume));
   return updatePad(kit, padIndex, (pad) => ({ ...pad, volume: clamped }));
+}
+
+/** Sets a Sample's Start/End trim, clamped to its duration. Start must precede End. */
+export function setSampleTrim(
+  kit: KitState,
+  sampleId: SampleId,
+  startSeconds: number,
+  endSeconds: number,
+): KitState {
+  const clamp = (v: number, max: number) => Math.min(max, Math.max(0, v));
+  return updateSample(kit, sampleId, (sample) => {
+    const start = clamp(startSeconds, sample.durationSeconds);
+    const end = clamp(endSeconds, sample.durationSeconds);
+    if (start >= end) {
+      return sample;
+    }
+    return { ...sample, trimStartSeconds: start, trimEndSeconds: end };
+  });
+}
+
+function updateSample(
+  kit: KitState,
+  sampleId: SampleId,
+  update: (sample: Sample) => Sample,
+): KitState {
+  const index = kit.samples.findIndex((sample) => sample.id === sampleId);
+  const sample = kit.samples[index];
+  if (sample === undefined) {
+    return kit;
+  }
+  const samples = [...kit.samples];
+  samples[index] = update(sample);
+  return { ...kit, samples };
 }
 
 export function padVolume(kit: KitState, padIndex: number): number {

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { WebAudioEngine } from "./audio/webAudioEngine";
 import { PadGrid } from "./components/PadGrid";
+import { SampleEditor } from "./components/SampleEditor";
 import { SamplesSection } from "./components/SamplesSection";
 import {
   addSample,
@@ -8,8 +9,11 @@ import {
   emptyKit,
   PAD_COUNT,
   padVolume,
+  playbackWindow,
   sampleForPad,
+  setSampleTrim,
   type KitState,
+  type Sample,
   type SampleId,
 } from "./core/kit";
 import { padForKey } from "./core/padKeys";
@@ -19,6 +23,7 @@ export function App() {
   const [kit, setKit] = useState(emptyKit);
   const [importError, setImportError] = useState<string | null>(null);
   const [assigningId, setAssigningId] = useState<SampleId | null>(null);
+  const [selectedId, setSelectedId] = useState<SampleId | null>(null);
   const [flashes, setFlashes] = useState<readonly number[]>(() =>
     new Array<number>(PAD_COUNT).fill(0),
   );
@@ -50,23 +55,32 @@ export function App() {
     );
   }
 
+  /** Plays a Sample's trimmed region (Start/End respected everywhere). */
+  function playSample(sample: Sample, volume = 1) {
+    const region = playbackWindow(sample);
+    engine().play(sample.id, { volume, ...region });
+  }
+
   function triggerPad(padIndex: number) {
     const sample = sampleForPad(kit, padIndex);
     if (sample === null) {
       return;
     }
-    engine().play(sample.id, padVolume(kit, padIndex));
+    playSample(sample, padVolume(kit, padIndex));
     flashPad(padIndex);
   }
 
   /** Pressing a Pad directly (click / Enter): assigns in assign mode, else triggers. */
   function onPadPressed(padIndex: number) {
     if (assigningId !== null) {
+      const sample = kit.samples.find((s) => s.id === assigningId);
       setKit((current) => assignSampleToPad(current, padIndex, assigningId));
       setAssigningId(null);
       // Audible + visual ack: the Pad plays its newly assigned Sample.
-      engine().play(assigningId, padVolume(kit, padIndex));
-      flashPad(padIndex);
+      if (sample !== undefined) {
+        playSample(sample, padVolume(kit, padIndex));
+        flashPad(padIndex);
+      }
       return;
     }
     triggerPad(padIndex);
@@ -97,6 +111,9 @@ export function App() {
     // handler's closure over `kit` fresh.
   });
 
+  const selectedSample =
+    kit.samples.find((sample) => sample.id === selectedId) ?? null;
+
   return (
     <main className="app">
       <h1>BeatSampler</h1>
@@ -104,11 +121,27 @@ export function App() {
         samples={kit.samples}
         importError={importError}
         assigningId={assigningId}
+        selectedId={selectedId}
         onFileChosen={(file) => void onFileChosen(file)}
         onToggleAssign={(sampleId) =>
           setAssigningId((current) => (current === sampleId ? null : sampleId))
         }
+        onSelect={(sampleId) =>
+          setSelectedId((current) => (current === sampleId ? null : sampleId))
+        }
       />
+      {selectedSample !== null && (
+        <SampleEditor
+          sample={selectedSample}
+          channelData={engine().channelData(selectedSample.id)}
+          onTrimChange={(startSeconds, endSeconds) =>
+            setKit((current) =>
+              setSampleTrim(current, selectedSample.id, startSeconds, endSeconds),
+            )
+          }
+          onPreview={() => playSample(selectedSample)}
+        />
+      )}
       <PadGrid
         kit={kit}
         flashes={flashes}

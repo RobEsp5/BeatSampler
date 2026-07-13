@@ -4,16 +4,20 @@ interface SamplesSectionProps {
   samples: readonly Sample[];
   importError: string | null;
   assigningId: SampleId | null;
+  selectedId: SampleId | null;
   onFileChosen: (file: File) => void;
   onToggleAssign: (sampleId: SampleId) => void;
+  onSelect: (sampleId: SampleId) => void;
 }
 
 export function SamplesSection({
   samples,
   importError,
   assigningId,
+  selectedId,
   onFileChosen,
   onToggleAssign,
+  onSelect,
 }: SamplesSectionProps) {
   return (
     <section className="samples">
@@ -35,8 +39,18 @@ export function SamplesSection({
       {samples.length > 0 && (
         <ul className="sample-list">
           {samples.map((sample) => (
-            <li key={sample.id}>
-              <span className="sample-name">{sample.name}</span>
+            <li
+              key={sample.id}
+              className={selectedId === sample.id ? "selected" : undefined}
+            >
+              <button
+                type="button"
+                className="sample-name select-sample"
+                title="Edit this Sample"
+                onClick={() => onSelect(sample.id)}
+              >
+                {sample.name}
+              </button>
               <span className="sample-duration">
                 {sample.durationSeconds.toFixed(2)}s
               </span>
