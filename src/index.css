@@ -25,6 +25,86 @@ h1 {
   letter-spacing: 0.04em;
 }
 
+.library {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.library-header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+
+.library-header h2 {
+  margin: 0;
+  font-size: 1rem;
+  letter-spacing: 0.03em;
+}
+
+.library-folder {
+  flex: 1;
+  color: #9aa0a6;
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
+
+.library-pick,
+.library-reopen {
+  margin-left: auto;
+  border: 1px solid #3c4043;
+  background: #24262d;
+  color: inherit;
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 0.4rem;
+  cursor: pointer;
+}
+
+.library-reopen {
+  margin-left: 0;
+  align-self: flex-start;
+  border-color: #8ab4f8;
+  color: #8ab4f8;
+}
+
+.library-pick:hover,
+.library-reopen:hover {
+  border-color: #8ab4f8;
+}
+
+.library-search {
+  border: 1px solid #3c4043;
+  background: #1d1f26;
+  color: inherit;
+  font: inherit;
+  font-size: 0.9rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: 0.4rem;
+}
+
+.library-search:focus {
+  outline: none;
+  border-color: #8ab4f8;
+}
+
+.library-row {
+  cursor: pointer;
+}
+
+.library-row:hover {
+  background: #24262d;
+}
+
+.library-source {
+  color: #9aa0a6;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
 .samples {
   width: 100%;
   display: flex;

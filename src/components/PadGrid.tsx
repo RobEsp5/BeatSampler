@@ -6,6 +6,7 @@ import {
   type KitState,
 } from "../core/kit";
 import { keyForPad } from "../core/padKeys";
+import { LIBRARY_SAMPLE_MIME } from "./LibrarySection";
 
 /**
  * Display order mirrors the MPC: Pad 1 bottom-left, Pad 16 top-right, so the
@@ -22,6 +23,8 @@ interface PadGridProps {
   assigning: boolean;
   onPadPressed: (padIndex: number) => void;
   onKitChange: (update: (kit: KitState) => KitState) => void;
+  /** A Library Sample (identified by name) was dropped onto the Pad. */
+  onLibrarySampleDropped: (padIndex: number, name: string) => void;
 }
 
 export function PadGrid({
@@ -30,6 +33,7 @@ export function PadGrid({
   assigning,
   onPadPressed,
   onKitChange,
+  onLibrarySampleDropped,
 }: PadGridProps) {
   return (
     <section className={assigning ? "pad-grid assigning" : "pad-grid"}>
@@ -52,6 +56,19 @@ export function PadGrid({
                   !event.repeat
                 ) {
                   onPadPressed(padIndex);
+                }
+              }}
+              onDragOver={(event) => {
+                if (event.dataTransfer.types.includes(LIBRARY_SAMPLE_MIME)) {
+                  event.preventDefault();
+                  event.dataTransfer.dropEffect = "copy";
+                }
+              }}
+              onDrop={(event) => {
+                const name = event.dataTransfer.getData(LIBRARY_SAMPLE_MIME);
+                if (name !== "") {
+                  event.preventDefault();
+                  onLibrarySampleDropped(padIndex, name);
                 }
               }}
             >
